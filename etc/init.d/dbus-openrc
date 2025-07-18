@@ -1,0 +1,45 @@
+#!/sbin/openrc-run
+# Copyright (c) 2007-2021 The Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+description="Starts the D-Bus system message bus"
+
+# Configuration is sourced automatically from the companion conf.d file.
+# /etc/conf.d/dbus
+command="/usr/bin/dbus-daemon"
+command_args="--system ${dbus_opts}"
+pidfile="/run/dbus/pid"
+command_user="messagebus"
+
+# Using supervise-daemon makes this critical service very robust.
+supervisor=supervise-daemon
+
+depend() {
+	# D-Bus is a fundamental service needed by many others.
+	# It needs the kernel virtual filesystems to be mounted.
+	need procfs sysfs
+	# This script provides the 'dbus' virtual service.
+	provide dbus
+}
+
+start_pre() {
+	# Ensure the machine-id file exists before starting.
+	if [ -x /usr/bin/dbus-uuidgen ]; then
+		/usr/bin/dbus-uuidgen --ensure
+	fi
+
+	# Use checkpath to create the runtime directory with correct permissions.
+	checkpath -d -m 0755 -o "${command_user}" /run/dbus
+}
+
+reload() {
+	ebegin "Reloading D-Bus configuration"
+	# The standard way to reload D-Bus is by sending it a message.
+	if dbus-send --print-reply --system --type=method_call \
+		--dest=org.freedesktop.DBus \
+		/ org.freedesktop.DBus.ReloadConfig > /dev/null; then
+		eend 0
+	else
+		eend 1 "Failed to send reload signal to D-Bus"
+	fi
+}

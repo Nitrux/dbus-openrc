@@ -1,0 +1,17 @@
+Source: dbus-openrc
+Section: misc
+Priority: important
+Maintainer: Uri Herrera <uri_herrera@nxos.org>
+Build-Depends: debhelper (>=9)
+Standards-Version: 3.9.6
+Homepage: http://nxos.org
+
+
+Package: dbus-openrc
+Architecture: all
+Depends: ${shlibs:Depends}, ${misc:Depends}, openrc, dbus
+Conflicts: systemd, systemd-sysv
+Description: Package to add dbus configuration for OpenRC.
+ This package will add the boot scripts to use dbus
+ with OpenRC in Nitrux.
+

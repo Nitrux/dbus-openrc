@@ -1,0 +1,6 @@
+# /etc/conf.d/dbus
+
+# Extra command-line arguments for the dbus-daemon.
+# See 'man dbus-daemon' for details.
+#
+# dbus_opts=""

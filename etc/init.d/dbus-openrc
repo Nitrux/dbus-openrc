@@ -10,23 +10,11 @@ pidfile="/run/dbus-openrc/pid"
 export SYSTEMD_NSS_BYPASS_BUS=1
 
 depend() {
-    need localmount
+    need procfs sysfs
     provide dbus
 }
 
 start_pre() {
-    # --- DEBUGGING: Print state to screen and pause ---
-    echo "--- DEBUG: About to start D-Bus.---"
-
-    # Fallback ownership in case messagebus doesn't exist
-
-    if ! getent passwd messagebus > /dev/null; then
-        ewarn "messagebus user does not exist, using root:root for /run/dbus"
-        command_user="root:root"
-    else
-        command_user="messagebus:messagebus"
-    fi
-
     # Use checkpath to create the runtime directory with correct permissions.
 
     checkpath -d -m 0755 -o "${command_user}" /run/dbus || return 1
@@ -38,8 +26,6 @@ start_pre() {
         eerror "Failed to generate machine-id"
         return 1
     fi
-
-
 }
 
 start() {

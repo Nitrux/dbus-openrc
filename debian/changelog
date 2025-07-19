@@ -1,5 +1,11 @@
 dbus-openrc (0.0.4)  nitrux; urgency=medium
 
+  * Fix depends, again.
+
+ -- Uri Herrera <uri_herrera@nxos.org>  Fri, 18 Jul 2025 21:07:00 -0500
+
+dbus-openrc (0.0.4)  nitrux; urgency=medium
+
   * Fix depends.
 
  -- Uri Herrera <uri_herrera@nxos.org>  Fri, 18 Jul 2025 20:49:00 -0500

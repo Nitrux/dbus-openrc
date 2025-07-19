@@ -1,45 +1,56 @@
 #!/sbin/openrc-run
-# Copyright (c) 2007-2021 The Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
 
 description="Starts the D-Bus system message bus"
 
-# Configuration is sourced automatically from the companion conf.d file.
-# /etc/conf.d/dbus
 command="/usr/bin/dbus-daemon"
-command_args="--system ${dbus_opts}"
-pidfile="/run/dbus/pid"
+command_args="--system"
 command_user="messagebus"
-
-# Using supervise-daemon makes this critical service very robust.
+pidfile="/run/dbus/pid"
 supervisor=supervise-daemon
 
 depend() {
-	# D-Bus is a fundamental service needed by many others.
-	# It needs the kernel virtual filesystems to be mounted.
-	need procfs sysfs
-	# This script provides the 'dbus' virtual service.
-	provide dbus
+    need procfs sysfs
+    provide dbus
 }
 
 start_pre() {
-	# Ensure the machine-id file exists before starting.
-	if [ -x /usr/bin/dbus-uuidgen ]; then
-		/usr/bin/dbus-uuidgen --ensure
-	fi
+    # --- DEBUGGING: Print state to screen and pause ---
+    echo "--- DEBUG: About to start D-Bus. Pausing for 10 seconds. ---"
+    sleep 10
 
-	# Use checkpath to create the runtime directory with correct permissions.
-	checkpath -d -m 0755 -o "${command_user}" /run/dbus
+    echo "--- DEBUG: Listing /run directory ---"
+    ls -laR /run
+    echo "--- DEBUG: Pausing for 10 seconds. ---"
+    sleep 10
+
+    if [ -x /usr/bin/dbus-uuidgen ]; then
+        /usr/bin/dbus-uuidgen --ensure
+    fi
+
+    checkpath -d -m 0755 -o "${command_user}" /run/dbus
 }
 
-reload() {
-	ebegin "Reloading D-Bus configuration"
-	# The standard way to reload D-Bus is by sending it a message.
-	if dbus-send --print-reply --system --type=method_call \
-		--dest=org.freedesktop.DBus \
-		/ org.freedesktop.DBus.ReloadConfig > /dev/null; then
-		eend 0
-	else
-		eend 1 "Failed to send reload signal to D-Bus"
-	fi
+start() {
+    # --- DEBUGGING: Attempt to start the daemon and show any errors ---
+    echo "--- DEBUG: Attempting to start dbus-daemon now... ---"
+    # We remove --quiet and run in the foreground to see all output
+    start-stop-daemon --start --pidfile "${pidfile}" \
+        --user "${command_user}" \
+        --exec "${command}" -- ${command_args}
+    local status=$?
+    
+    echo "--- DEBUG: dbus-daemon exited with status code: ${status}. Pausing for 30 seconds. ---"
+    sleep 30
+
+    # This part will likely not be reached if the daemon fails, but is here just in case.
+    if [ ! -S /run/dbus/system_bus_socket ]; then
+        echo "--- DEBUG: Socket was NOT created. ---"
+    else
+        echo "--- DEBUG: Socket WAS created successfully. ---"
+    fi
+    echo "--- DEBUG: End of D-Bus script. Pausing for 10 seconds. ---"
+    sleep 10
+
+    # Intentionally fail so OpenRC doesn't continue and clear the screen
+    return 1
 }

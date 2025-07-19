@@ -1,4 +1,4 @@
-# /etc/conf.d/dbus
+# /etc/conf.d/dbus-openrc
 
 # Extra command-line arguments for the dbus-daemon.
 # See 'man dbus-daemon' for details.

@@ -3,13 +3,15 @@
 description="Starts the D-Bus system message bus"
 
 command="/usr/bin/dbus-daemon"
-command_args="--system"
+command_args="--system --nofork --nopidfile --syslog-only ${command_args:-}"
 command_user="messagebus"
-pidfile="/run/dbus/pid"
-supervisor=supervise-daemon
+command_background="yes"
+pidfile="/run/dbus-openrc/pid"
+export SYSTEMD_NSS_BYPASS_BUS=1
 
 depend() {
-    need procfs sysfs
+    need localmount
+    after bootmisc
     provide dbus
 }
 
@@ -17,17 +19,36 @@ start_pre() {
     # --- DEBUGGING: Print state to screen and pause ---
     echo "--- DEBUG: About to start D-Bus.---"
 
-    if [ -x /usr/bin/dbus-uuidgen ]; then
-        /usr/bin/dbus-uuidgen --ensure
+    # Fallback ownership in case messagebus doesn't exist
+
+    if ! getent passwd messagebus > /dev/null; then
+        ewarn "messagebus user does not exist, using root:root for /run/dbus"
+        command_user="root:root"
+    else
+        command_user="messagebus:messagebus"
     fi
 
-    checkpath -d -m 0755 -o "${command_user}" /run/dbus
+    # Use checkpath to create the runtime directory with correct permissions.
+
+    checkpath -d -m 0755 -o "${command_user}" /run/dbus || return 1
+
+    # Ensure the machine-id file exists before starting.
+
+    if [ -x /usr/bin/dbus-uuidgen ]; then
+        /usr/bin/dbus-uuidgen --ensure=/etc/machine-id
+        eerror "Failed to generate machine-id"
+        return 1
+    fi
+
+
 }
 
 start() {
     # --- DEBUGGING: Attempt to start the daemon and show any errors ---
     echo "--- DEBUG: Attempting to start dbus-daemon now... ---"
+
     # We remove --quiet and run in the foreground to see all output
+
     start-stop-daemon --start --pidfile "${pidfile}" \
         --user "${command_user}" \
         --exec "${command}" -- ${command_args}
@@ -36,9 +57,22 @@ start() {
     echo "--- DEBUG: dbus-daemon exited with status code: ${status}.---"
 
     # This part will likely not be reached if the daemon fails, but is here just in case.
+
     if [ ! -S /run/dbus/system_bus_socket ]; then
         echo "--- DEBUG: Socket was NOT created. ---"
     else
         echo "--- DEBUG: Socket WAS created successfully. ---"
     fi
+}
+
+reload() {
+	ebegin "Reloading D-Bus configuration"
+	# The standard way to reload D-Bus is by sending it a message.
+	if dbus-send --print-reply --system --type=method_call \
+		--dest=org.freedesktop.DBus \
+		/ org.freedesktop.DBus.ReloadConfig > /dev/null; then
+		eend 0
+	else
+		eend 1 "Failed to send reload signal to D-Bus"
+	fi
 }

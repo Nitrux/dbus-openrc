@@ -1,3 +1,9 @@
+dbus-openrc (0.0.4)  nitrux; urgency=medium
+
+  * Dix depends.
+
+ -- Uri Herrera <uri_herrera@nxos.org>  Fri, 18 Jul 2025 20:49:00 -0500
+
 dbus-openrc (0.0.3)  nitrux; urgency=medium
 
   * Make exectuable is launched with logging arguments.

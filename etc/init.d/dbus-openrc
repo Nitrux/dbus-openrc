@@ -5,7 +5,7 @@ description="Starts the D-Bus system message bus"
 command="/usr/bin/dbus-daemon"
 command_args="--system"
 command_user="messagebus"
-pidfile="/run/dbus/pid"
+supervisor="supervise-daemon"
 
 depend() {
     need procfs sysfs
@@ -13,15 +13,5 @@ depend() {
 }
 
 start_pre() {
-    if [ -x /usr/bin/dbus-uuidgen ]; then
-        /usr/bin/dbus-uuidgen --ensure
-    fi
-
     checkpath -d -m 0755 -o "${command_user}" /run/dbus
-}
-
-start() {
-    start-stop-daemon --start --pidfile "${pidfile}" \
-        --user "${command_user}" \
-        --exec "${command}" -- ${command_args}
 }

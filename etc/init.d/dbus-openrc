@@ -22,7 +22,7 @@ start_pre() {
     # Ensure the machine-id file exists before starting.
 
     if [ -x /usr/bin/dbus-uuidgen ]; then
-        /usr/bin/dbus-uuidgen --ensure=/etc/machine-id
+        /usr/bin/dbus-uuidgen --ensure
         eerror "Failed to generate machine-id"
         return 1
     fi

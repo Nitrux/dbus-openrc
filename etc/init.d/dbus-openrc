@@ -3,15 +3,19 @@
 description="Starts the D-Bus system message bus"
 
 command="/usr/bin/dbus-daemon"
-command_args="--system"
+command_args="--system --nofork --nopidfile"
 command_user="messagebus"
-supervisor="supervise-daemon"
+supervisor=supervise-daemon
 
 depend() {
-    need procfs sysfs
+    need procfs sysfs localmount
     provide dbus
 }
 
 start_pre() {
     checkpath -d -m 0755 -o "${command_user}" /run/dbus
+    if [ -e /run/dbus/pid ]; then
+        pid="$(cat /run/dbus/pid 2>/dev/null || true)"
+        [ -z "$pid" ] || [ ! -d "/proc/$pid" ] && rm -f /run/dbus/pid
+    fi
 }
